@@ -1,0 +1,123 @@
+import sys
+import time
+import collections
+import correctnessTester
+import plotter
+import monitor
+
+class P (process):
+    def setup(ps:set, nrounds:int, orig_token:bool,perf:int,m:Monitor):
+
+        self.clock = 0
+        self.token = dict((p, 0) for p in ps)
+        self.totalTime = 0
+        self.commTime = 0
+        self.csTime = 0
+        self.waitingTime = 0
+        send(('winner',orig_token,self.id),to=m)
+
+
+    def cs(task):
+        --request
+        if not token_present():
+            commstart = time.time()
+            send(('request', clock, self.id), to=ps)
+            self.commTime += (time.time() - commstart)
+            send(('request',clock,self.id),to= m)
+            waitstart = time.time()
+            await(token_present())
+            self.waitingTime += (time.time() - waitstart)
+
+        token[self.id] = clock
+        
+        csstart = time.time()        
+        task()                  # critical section
+        self.csTime += (time.time() - csstart)
+
+        clock += 1
+        --release
+        for p in ps:
+            if request_pending(p) and token_present():
+
+                commstart = time.time()
+                send(('access', token), to=p)
+                self.commTime += (time.time() - commstart)
+                clock += 1
+                break
+        send(('release',clock,self.id),to=m)
+    def receive(msg=('access', newtok)):
+        time.sleep(1*perf)
+        token = newtok
+
+    def receive(msg=('request', c, p)):
+        time.sleep(1*perf)
+        if request_pending(p) and token_present():
+            commstart = time.time()
+            send(('access', token), to=p)
+            self.commTime += (time.time() - commstart)
+            clock += 1
+
+    def request_pending(p):
+        # p has a request after it last had the token
+        return some(received(('request', c, _p)), has=(c > token[p]))
+
+    def token_present():
+        clock+=1
+        return (orig_token and not some(sent(('access', _))) or
+                some(received(('access', token1)),
+                     has= (not some(sent(('access', token2)),
+                                    has= (token2[self.id] > token1[self.id])))))
+
+    def run():
+        start = time.time()
+        def anounce():
+            send(('in CS',clock,self.id),to = m)
+        if token_present():
+            #output("I'm lucky!")
+            pass
+        for i in range(nrounds):
+            cs(anounce)
+        
+        commstart = time.time()
+        send(('Done',), to=ps)
+        self.commTime += (time.time() - commstart)
+        waitStart = time.time()
+        await(each(p in ps, has= received(('Done',), from_=p)))
+        self.waitingTime += (time.time() - waitStart)
+        self.totalTime += (time.time() - start)
+        if perf != 0:
+               send(('performance measure',[self.id,self.perf,self.totalTime,self.commTime,self.csTime,self.waitingTime]),to= m)
+ 
+def main():
+    p = int(sys.argv[1]) if len(sys.argv) > 1 else 10
+    r = int(sys.argv[2]) if len(sys.argv) > 2 else 1
+    n = int(sys.argv[3]) if len(sys.argv) > 3 else 1
+    s = int(sys.argv[4]) if len(sys.argv) > 4 else 1
+    m = int(sys.argv[5]) if len(sys.argv) > 5 else 1
+    
+    for i in range(n):	
+            ps = new(P, num= p)
+            winner = ps.pop()
+            mon = new(monitor.Monitor)
+            for proc in mon: setup(proc,(ps,p*r,0,0,0,'RicartAgarwalaToken'+str(i)))#correctness run
+            setup(ps,(ps|{winner},r,False,0,mon))
+            setup([winner],(ps|{winner},r,True,0,mon))
+            start(mon)
+            start(ps|{winner})
+    for i in range(m):
+
+            j = 1
+            
+            while (j<=s):
+          
+                ps= new(P, num= p)
+                winner = ps.pop()
+                mon = new(monitor.Monitor)
+                for proc in mon: setup(proc,(ps,p*r,p,j,s,'RicartAgarwalaToken'+str(j)))
+                setup(ps, (ps|{winner}, r,False,j,mon))
+                setup([winner],(ps|{winner},r,True,j,mon))
+                start(mon)
+                start(ps|{winner})
+                j += 1
+
+

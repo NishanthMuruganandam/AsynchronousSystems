@@ -1,0 +1,131 @@
+import sys
+import time
+import collections
+import correctnessTester
+import plotter
+import monitor
+
+class P(process):
+
+    def setup(ps:set, nrounds:int, perf:int , m: Monitor):  # ps is set of all other processes       
+        self.waiting = set()
+        self.replied = set()   
+        self.reqc = None
+        self.totalTime = 0
+        self.commTime = 0
+        self.csTime = 0
+        self.waitingTime = 0
+
+    def cs(task):
+      # to enter cs, enque and send request to all, then await replies from all
+        --start
+        reqc = logical_clock()
+
+        commStart = time.time()
+        send(('Request', reqc), to=ps)
+        self.commTime += (time.time() - commStart)
+ 
+        send(('request',reqc,self.id),to= m)
+  
+        waitTime = time.time()
+        await(len(replied) == len(ps))
+        self.waitingTime += (time.time() - waitTime)
+
+        cst = time.time()
+      # critical section
+        task()
+        self.csTime = time.time() - cst
+
+      # to exit cs, deque and send releases to all
+        --release
+        reqc = None
+        commStart = time.time()
+        reqc = logical_clock()
+
+        send(('release',reqc,self.id),to= m)
+        send(('Reply', reqc), to=waiting)
+
+        self.commTime += (time.time() - commStart)
+        --end
+        waiting = set()
+        replied = set()
+
+    def run():
+        start = time.time()
+
+        def anounce():
+            c = logical_clock()
+            send(('in CS',c,self.id),to= m)  
+        for i in range(nrounds) :
+            cs(anounce)
+        commStart = time.time()
+        send(('Done', self.id), to=ps)
+        self.commTime += (time.time() - commStart)
+ 
+        waitTime = time.time()    
+        await(each(p in ps, has= received(('Done', p))))
+        self.waitingTime += (time.time() - waitTime)
+        self.totalTime += (time.time() - start)
+        if perf != 0:
+               send(('performance measure',[self.id,self.perf,self.totalTime,self.commTime,self.csTime,self.waitingTime]),to= m)
+ 
+    # when receiving requests from others, enque and reply
+    def receive(msg=('Request', timestamp), from_=source):
+
+        time.sleep(1*perf)
+        if (reqc == None or (timestamp, source) < (reqc, self.id)):
+            commStart = time.time()
+            send(('Reply', logical_clock()), to=source)
+            self.commTime += (time.time() - commStart)
+        else:
+            waiting.add(source)
+
+    def receive(msg=('Reply', c1), from_=source):
+
+        time.sleep(1*perf)
+        if reqc is not None and c1 > reqc:
+            replied.add(source)
+
+def main():
+    
+    #nprocs = int(sys.argv[1]) if len(sys.argv) > 1 else 10
+    #nrounds = int(sys.argv[2]) if len(sys.argv) > 2 else 1
+    #config(clock='Lamport')
+    #ps = new(P, num= nprocs)
+    # setup the processes
+    #for p in ps: setup({p}, (ps-{p}, nrounds))
+    # start the processes
+    #start(ps)
+
+    p = int(sys.argv[1]) if len(sys.argv) > 1 else 10
+    r = int(sys.argv[2]) if len(sys.argv) > 2 else 1
+    n = int(sys.argv[3]) if len(sys.argv) > 3 else 1
+    s = int(sys.argv[4]) if len(sys.argv) > 4 else 1
+    m = int(sys.argv[5]) if len(sys.argv) > 5 else 1
+    
+    for i in range(n):	
+	    config(clock= 'Lamport')
+    
+	    ps = new(P, num= p)
+	    mon = new(monitor.Monitor)
+	    for proc in mon: setup(proc,(ps,p*r,0,0,0,'RicartAgarwalaMutex'+str(i)))#correctness run
+	    for proc in ps: setup(proc, (ps-{proc}, r,0,mon))
+	    start(mon)
+	    start(ps)
+
+    for i in range(m):
+
+            j = 1
+            
+            while (j<=s):
+          
+                config(clock= 'Lamport')
+                ps= new(P, num= p)
+                mon = new(monitor.Monitor)
+                for proc in mon: setup(proc,(ps,p*r,p,j,s,'RicartAgarwalaMutex'+str(j)))
+                for proc in ps: setup(proc, (ps-{proc}, r,j,mon))
+                start(mon)
+                start(ps)
+                j += 1
+
+

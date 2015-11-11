@@ -1,0 +1,124 @@
+import sys
+import time
+import collections
+import correctnessTester
+import plotter
+import monitor
+
+class P(process):
+
+    def setup(s:set, nrequests:int, perf:int, m: Monitor):  # s is set of all other processes
+        
+        self.q = set()
+        self.totalTime = 0
+        self.commTime = 0
+        self.csTime = 0
+        self.waitingTime = 0
+
+    def mutex(task):
+       
+        -- request
+        c = logical_clock()
+
+        commStart = time.time()
+        send(('request', c, self.id), to= s)
+        self.commTime += (time.time() - commStart)
+
+        send(('request',c,self.id),to= m)
+
+        q.add(('request', c, self.id))        
+        
+        waitTime = time.time()
+        await(each(('request', c2, p) in q,
+                   has= (c2, p)==(c, self.id) or (c, self.id) < (c2, p)) and
+              each(p in s, has= some(received(('ack', c2, _p)), has= c2 > c)))
+         
+        self.waitingTime += (time.time() - waitTime)
+        cs = time.time()
+        -- critical_section
+        task()
+        self.csTime = time.time() - cs
+        -- release
+        q.remove(('request', c, self.id))
+
+        c = logical_clock()
+        send(('release',  c, self.id), to= m)     
+        commStart = time.time()
+        send(('release', c, self.id), to= s)
+        self.commTime += (time.time() - commStart)
+
+
+    def receive(msg= ('request', c2, p)):
+        q.add(('request', c2, p))
+        time.sleep(1*perf)
+        send(('ack', logical_clock(), self.id), to= p)
+
+    def receive(msg= ('release', _, p)):
+        time.sleep(1*perf)
+        for x in setof(('request', c, p), ('request', c, _p) in q):
+            q.remove(x); break
+
+    def run():
+        start = time.time()
+        def task():            
+            c = logical_clock();
+            send(('in CS',c,self.id),to= m)  
+            #time.sleep(1*perf)
+ 
+        for i in range(nrequests):
+            mutex(task)
+
+        commStart = time.time()
+        send(('done', self.id), to= s)
+        self.commTime += (time.time() - commStart)
+        waitTime = time.time()
+        await(each(p in s, has= received(('done', p))))
+        self.waitingTime += (time.time() - waitTime)
+        self.totalTime += (time.time() - start)
+        if perf != 0:
+               send(('performance measure',[self.id,self.perf,self.totalTime,self.commTime,self.csTime,self.waitingTime]),to= m)
+        
+
+def main():
+    
+    p = int(sys.argv[1]) if len(sys.argv) > 1 else 10
+    r = int(sys.argv[2]) if len(sys.argv) > 2 else 1
+    n = int(sys.argv[3]) if len(sys.argv) > 3 else 1
+    s = int(sys.argv[4]) if len(sys.argv) > 4 else 1
+    m = int(sys.argv[5]) if len(sys.argv) > 5 else 1
+    
+    for i in range(n):	
+	    config(channel= 'fifo', clock= 'Lamport')
+    
+	    ps = new(P, num= p)
+	    mon = new(monitor.Monitor)
+	    for proc in mon: setup(proc,(ps,p*r,0,0,0,'LamportMutex'+str(i)))#correctness run
+	    for proc in ps: setup(proc, (ps-{proc}, r,0,mon))
+	    start(mon)
+	    start(ps)
+
+    for i in range(m):
+
+            j = 1
+            
+            while (j<=s):
+          
+                config(channel= 'fifo', clock= 'Lamport')
+                ps= new(P, num= p)
+                mon = new(monitor.Monitor)
+                for proc in mon: setup(proc,(ps,p*r,p,j,s,'LamportMutex'+str(j)))
+                for proc in ps: setup(proc, (ps-{proc}, r,j,mon))
+                start(mon)
+                start(ps)
+                j += 1
+
+
+# This is an executable specification of the algorithm described in
+# Lamport, L. (1978). "Time, clocks, and the ordering of events in a
+# distributed system".  Communications of the ACM, 21(7):558-565.
+
+# This code includes setup and termination for serving a given number of
+# requests per process.
+
+# All labels are not needed,
+# leaving 14 or 15 lines total for the algorithm body and message handlers.

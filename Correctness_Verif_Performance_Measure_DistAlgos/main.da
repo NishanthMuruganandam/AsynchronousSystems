@@ -1,0 +1,28 @@
+import os
+import sys
+
+def main():
+    
+    p = int(sys.argv[1]) if len(sys.argv) > 1 else 10
+    r = int(sys.argv[2]) if len(sys.argv) > 2 else 1
+    n = int(sys.argv[3]) if len(sys.argv) > 3 else 1
+    s = int(sys.argv[4]) if len(sys.argv) > 4 else 2
+    m = int(sys.argv[5]) if len(sys.argv) > 5 else 1
+
+    os.system('dac monitor.da')
+    
+    if not os.path.exists('output'):
+          os.makedirs('output')    
+
+    args = str(p) + ' ' + str(r) + ' ' + str(n) + ' ' + str(s) + ' ' + str(m)
+
+    print("!!! Running Lamport Mutex Algorithm !!!")
+    
+   
+    os.system('dar lamutex.da ' + args);
+
+    print("!!! Running Ricart Agarwala Algorithm !!!")
+    os.system('dar ramutex.da ' + args);
+
+    print("!!! Running Ricart Agarwala Token Based Algorithm !!!")
+    os.system('dar ratoken.da ' + args);

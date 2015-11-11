@@ -1,0 +1,73 @@
+import sys
+import time
+import collections
+import correctnessTester
+import plotter
+
+##########################################################
+#This acts as the monitor to which the Processes in the  #
+#distributed system report. Each process sends various   #
+#messages to which it takes corresponding actions. This  #
+#module generates the necessary outputs that we desire.  #
+##########################################################
+
+class Monitor(process):
+
+#perf - A boolean to indicate if the Monitor is used for Performance Measure or not
+#perfLimit - 's' passed to the main.da from commandline
+#algorithmName - Name of the distributed algorithm being monitored. 
+    
+    def setup(s:set, n:int,p:int, perf:int,perfLimit:int,algorithmName:string):
+        self.q = set()
+        self.rows = []
+        self.perfMeasure = []
+
+    def receive(msg=('request',c,p)):
+        printRow(c,p)
+
+    def printRow(c,requestingProcess=None,processInCS=None,releasingProcess=None):
+        
+        l = [int(c),str(requestingProcess),str(processInCS),str(releasingProcess)]
+        self.rows.append(l)
+       #print('| ' + str(c) + ' | ' + str(requestingProcess) + ' | ' + str(processInCS) + ' | ' + str(releasingProcess) + ' | ');
+
+    def receive(msg=('release',c,p)):
+       
+        q.add((p,c,' Released'))  
+        printRow(c,None,None,p)
+         
+    def receive(msg=('in CS',c,p)):
+        printRow(c,None,p,None)
+        send(('get out',self.id),to= p)
+
+#The following msg is sent by the process that is elected winner first by the token algorithms.
+    def receive(msg=('winner',isWinner,p)):
+        if isWinner:
+           printRow(0,p)
+    def receive(msg=('performance measure',l)):
+
+        self.perfMeasure.append(l)
+
+    def waitForPerfResult():
+        await(len(self.perfMeasure) == self.p)
+        plotter.drawTable(self.perfMeasure,['ProcessID','Performance Parameter','Total time','Communication Time', 'CS Time','Waiting Time'],self.algorithmName);
+
+
+    def run():
+        await(len(q) == n);
+        self.rows.sort()
+        
+        if perf == 0:
+               plotter.drawTable(self.rows, ['Time','Requesting Process','Process in CS', 'Releasing Process'],self.algorithmName)
+               # If it is a token based algorithm, correctness test is done in different manner. Check the correctnessTester.py file
+               if 'Token' in self.algorithmName:
+                    correctnessTester.testCorrectness(self.rows,True)                
+               else:
+                    correctnessTester.testCorrectness(self.rows,False)
+
+        else :
+               waitForPerfResult()
+               plotter.prepGraph(self.perfMeasure)
+        if perf == perfLimit and perf != 0:
+               plotter.drawGraph(self.algorithmName)
+
