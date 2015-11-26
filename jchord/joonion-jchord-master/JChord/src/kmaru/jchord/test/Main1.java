@@ -15,7 +15,7 @@ public class Main1 {
 
 	public static final int KEY_LENGTH = 160;
 
-	public static final int NUM_OF_NODES = 1000;
+	public static final int NUM_OF_NODES = 2;
 
 	public static void main(String[] args) throws Exception {
 
