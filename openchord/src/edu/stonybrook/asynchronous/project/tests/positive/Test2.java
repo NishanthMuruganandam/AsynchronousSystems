@@ -1,10 +1,10 @@
-package edu.stonybrook.asynchronous.project.scenarios;
+package edu.stonybrook.asynchronous.project.tests.positive;
 
 import edu.stonybrook.asynchronous.project.data.StringKey;
 import edu.stonybrook.asynchronous.project.userinteraction.Administrator;
 import edu.stonybrook.asynchronous.project.userinteraction.User;
 
-public class Scenario2 {
+public class Test2 {
 	
 	public static void main(String[] args) {
 		User admin = new Administrator();
