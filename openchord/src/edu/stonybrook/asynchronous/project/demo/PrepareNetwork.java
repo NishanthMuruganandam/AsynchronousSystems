@@ -1,5 +1,9 @@
 package edu.stonybrook.asynchronous.project.demo;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -8,6 +12,7 @@ import java.util.Set;
 import edu.stonybrook.asynchronous.project.data.StringKey;
 import edu.stonybrook.asynchronous.project.userinteraction.Administrator;
 import edu.stonybrook.asynchronous.project.userinteraction.User;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class PrepareNetwork {
 	
@@ -83,13 +88,28 @@ public class PrepareNetwork {
 		insertData();
 		
 	}
-	public static void main(String[] args) {
+	public static void main(String[] args) throws IOException {
 		String csvFileDirectory = "/home/nishanth/MS/Fall2015/Asynchronous Systems/Project/";		
 		String csvFileName = "nameservers.csv";
+		long startTime = System.currentTimeMillis();
 		prepareNetwork(csvFileDirectory, csvFileName);
+		long elapsedTime = System.currentTimeMillis() - startTime;		
 		System.out.println("NetworkSetup Finished");
-		User user = users.get(23);
-		System.out.println("Chosen User Country: " + user.getCountry());
-		System.out.println(user.retrieve(new StringKey("87-204-55-61.ilkus.net.")));
+		System.out.println("Elapsed time for setting up the network : " + elapsedTime);
+		BufferedWriter bw = new BufferedWriter(new FileWriter(new File("results.txt")));
+		bw.write("Elapsed Time for setting up the network (in ms): " + elapsedTime);
+		bw.newLine();
+		for (int i = 0 ; i<10;i++){
+			int n = ThreadLocalRandom.current().nextInt(0, users.size() - 1);
+			System.out.println("n : "  + n);
+			User user = users.get(n);
+			System.out.println("Chosen User Country: " + user.getCountry());
+			bw.write("Chosen User Country: " + user.getCountry());
+			long retrieveStart = System.currentTimeMillis();
+			System.out.println(user.retrieve(new StringKey("87-204-55-61.ilkus.net.")));
+			bw.write("    Retrieve time : " + (System.currentTimeMillis()-retrieveStart));
+			bw.newLine();
+		}		
+		bw.close();
 	}
 }
