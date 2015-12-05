@@ -1,4 +1,4 @@
-package edu.stonybrook.asynchronous.project.demo;
+package edu.stonybrook.asynchronous.project.entrypoint;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 
 import edu.stonybrook.asynchronous.project.data.StringKey;
+import edu.stonybrook.asynchronous.project.demo.PrepareData;
 import edu.stonybrook.asynchronous.project.userinteraction.Administrator;
 import edu.stonybrook.asynchronous.project.userinteraction.User;
 import java.util.concurrent.ThreadLocalRandom;
@@ -85,14 +86,13 @@ public class PrepareNetwork {
 		countryToDNSIPMap = PrepareData.prepareData(csvFileDirectory, csvFileName);
 		prepareUsers(countryToDNSIPMap.keySet());		
 		usersSetup(csvFileDirectory,csvFileName);		
-		insertData();
-		
-	}
+		insertData();		
+	}	
 	public static void main(String[] args) throws IOException {
 		String csvFileDirectory = "/home/nishanth/MS/Fall2015/Asynchronous Systems/Project/";		
 		String csvFileName = "nameservers.csv";
 		long startTime = System.currentTimeMillis();
-		prepareNetwork(csvFileDirectory, csvFileName);
+		PrepareNetwork.prepareNetwork(csvFileDirectory, csvFileName);
 		long elapsedTime = System.currentTimeMillis() - startTime;		
 		System.out.println("NetworkSetup Finished");
 		System.out.println("Elapsed time for setting up the network : " + elapsedTime);
