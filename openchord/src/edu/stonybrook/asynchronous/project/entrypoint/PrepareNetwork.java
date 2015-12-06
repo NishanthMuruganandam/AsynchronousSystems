@@ -89,7 +89,7 @@ public class PrepareNetwork {
 		insertData();		
 	}	
 	public static void main(String[] args) throws IOException {
-		String csvFileDirectory = "/home/nishanth/MS/Fall2015/Asynchronous Systems/Project/";		
+		String csvFileDirectory = "";//"/home/nishanth/MS/Fall2015/Asynchronous Systems/Project/";		
 		String csvFileName = "nameservers.csv";
 		long startTime = System.currentTimeMillis();
 		PrepareNetwork.prepareNetwork(csvFileDirectory, csvFileName);

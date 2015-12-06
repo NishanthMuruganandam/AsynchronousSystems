@@ -7,7 +7,7 @@ public class ErrorCase1 {
 
 	public static void main(String[] args) {
 		User admin = new Administrator();
-		String csvFileDirectory = "/home/nishanth/MS/Fall2015/Asynchronous Systems/Project/";		
+		String csvFileDirectory = "";//"/home/nishanth/MS/Fall2015/Asynchronous Systems/Project/";		
 		String csvFileName = "nameservers.csv";
 		admin.setupChord(csvFileDirectory, csvFileName);
 		
